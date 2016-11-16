@@ -16,7 +16,7 @@ public class PlayStoreDataFetching {
 	PlayStoreUrlFetching playStoreUrl = new PlayStoreUrlFetching();
 	GameInfo gameInfo = new GameInfo();
 
-	public void getPlaystoreData(String url) {
+	public GameInfo getPlaystoreData(String url) {
 
 		String title;
 		String packName ;
@@ -101,6 +101,6 @@ public class PlayStoreDataFetching {
 
 			e.printStackTrace();
 		}
-		
+		return gameInfo;
 	}
 }

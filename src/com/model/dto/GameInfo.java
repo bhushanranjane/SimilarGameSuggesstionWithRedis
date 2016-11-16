@@ -67,4 +67,17 @@ public class GameInfo {
 	public void setGameName(String gameName) {
 		this.gameName = gameName;
 	}
+	
+	public GameInfo(){
+		
+	}
+	
+	public GameInfo(String gameName,String packageId,String packageName,String gameCategory,String gameURL,String paid){
+		setGameName(gameName);
+		setPackageId(packageId);
+		setGameCategory(gameCategory);
+		setGameURL(gameURL);
+		setPackageName(packageName);
+		setPaid(paid);
+	}
 }

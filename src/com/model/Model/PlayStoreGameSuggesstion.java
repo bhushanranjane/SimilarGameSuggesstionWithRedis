@@ -8,45 +8,46 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.json.simple.JSONArray;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.model.dto.GameInfo;
 import com.model.dto.SuggestInfo;
 
 import redis.clients.jedis.Jedis;
 
 public class PlayStoreGameSuggesstion {
-	public static final String  GAMES= "GAMES";
+	public static final String GAMES = "GAMES";
 	PlayStoreUrlFetching playStoreUrl = new PlayStoreUrlFetching();
-	final Jedis redisConnect=new Jedis("localhost");
+	final static Jedis redisConnect = new Jedis("localhost");
+	static Gson gson = new Gson();
+	List<String> jsonData=new ArrayList<String>();
 	
+	
+	
+	public SuggestInfo getGameSuggesstion(GameInfo gameInfo) {
 
-	public void getGameSuggesstion(String url) {
-	
-		String gameUrl=null;
-		String packName=null;
-		String image=null;
-		String flag=null;
-		String rating=null;
-		String iurl=null;
-		String packageId=null;
+		String gameUrl = null;
+		String packName = null;
+		String image = null;
+		String flag = null;
+		String rating = null;
+		String iurl = null;
+		String packageId = null;
+		String packagecon = null;
 		SuggestInfo suggesstion = null;
-		GameInfo gameInfo=new GameInfo();
 		
-		
+
 		ArrayList<SuggestInfo> arrayList = new ArrayList<SuggestInfo>();
 		ArrayList<String> imageinfo = new ArrayList<String>();
 		ArrayList<String> games = new ArrayList<String>();
-		Map<String,String> similarGames=new HashMap<String,String>();
-		
+		Map<String, String> similarGames = new HashMap<String, String>();
+
 		try {
-			Document doc = Jsoup.connect(url).userAgent("Chrome/50.0.2661.94").timeout(10000).get();
+			Document doc = Jsoup.connect(gameInfo.getGameURL()).userAgent("Chrome/50.0.2661.94").timeout(10000).get();
 
 			// get the titles of the suggested game
 			Elements e = doc.select("div.cards.id-card-list");
@@ -71,7 +72,7 @@ public class PlayStoreGameSuggesstion {
 				}
 
 			}
-	
+
 			// add the names of the game into array list
 			for (int i = 0; i < gamename.length; i++) {
 				if (gamename[i].contains("href"))
@@ -115,66 +116,63 @@ public class PlayStoreGameSuggesstion {
 				suggesstion = new SuggestInfo();
 				gameUrl = playStoreUrl.findUrl(games.get(j));
 				packName = gameUrl.substring(gameUrl.indexOf("id=") + 3);
-				packageId=Integer.toString(packName.hashCode() & Integer.MAX_VALUE);
+				packageId = Integer.toString(packName.hashCode() & Integer.MAX_VALUE);
 				image = imageinfo.get(j);
 				// Append http to the image url
 				if (image.contains("http") == false) {
 					image = ("http:").concat(image.trim());
 
 				}
-				
-			/*	suggesstion.setGameName(games.get(j));
-				suggesstion.setPackageName(packName);
-				suggesstion.setGameUrl(gameUrl);
-				suggesstion.setImageUrl(image);
-				suggesstion.setGameRating(gameRating.get(j));*/
-				
+
+				 suggesstion.setGameName(games.get(j));
+				 suggesstion.setPackageName(packName);
+				 suggesstion.setGameUrl(gameUrl);
+				 suggesstion.setImageUrl(image);
+				 suggesstion.setGameRating(gameRating.get(j));
+				 
+
 				if (!flag.equals("Free")) {
 					suggesstion.setGameCost(cost);
 				} else
 					suggesstion.setGameCost("Free");
 
-				
-				similarGames.put("Gamename",games.get(j));
+				similarGames.put("Gamename", games.get(j));
 				similarGames.put("PackageName", packName);
 				similarGames.put("GameUrl", gameUrl);
-				similarGames.put("imagurl",image);
-				similarGames.put("PackageId",packageId);
-				similarGames.put("Ratings",gameRating.get(j));
-				
-				Set<Map<String,String>> suggestedGames=new HashSet<Map<String,String>>();
+				similarGames.put("imagurl", image);
+				similarGames.put("PackageId", packageId);
+				similarGames.put("Ratings", gameRating.get(j));
+
+				Set<Map<String, String>> suggestedGames = new HashSet<Map<String, String>>();
 				suggestedGames.add(similarGames);
-				String contentId=packageId.substring(0, 3);
+
+				// redis data with base game as key
+				String baseGameId = gameInfo.getPackageId().substring(0, 3);
+				redisConnect.hset("GameId:-" + baseGameId, "Package Id:-" + packageId,
+						"Game Suggestion:-" + suggestedGames.toString());
+
+				// Storing related game related package id in json
+				Set<String> relatedPackage = new HashSet<String>();
+				relatedPackage.add(packageId);
 				
-				/*Gson gson=new Gson();
-				String sgames=gson.toJson(suggestedGames);*/
+
+				packagecon = gson.toJson(relatedPackage);				
 				
-				JsonObject jsonObject=new JsonObject();
-				jsonObject.addProperty("Game Name",similarGames.get("Gamename"));
-				jsonObject.addProperty("Package", similarGames.get("PackageName"));
-				jsonObject.addProperty("Game Url",similarGames.get("GameUrl"));
-				jsonObject.addProperty("Image ", similarGames.get("imagurl"));
-				jsonObject.addProperty("PackageId",similarGames.get("PackageId"));
-				jsonObject.addProperty("Ratings",similarGames.get("Ratings"));
-				 
-				/*System.out.println("suggested"+jsonObject.toString());*/
+				/*System.out.println("Related Package"+packagecon+"-------");*/
+				redisConnect.hset("Jsondata" + baseGameId, "Pack id:-" + gameInfo.getPackageId(), packagecon);
+
+				List<String> jsonData = redisConnect.hmget(baseGameId, gameInfo.getPackageId());
+				System.out.println("json List"+jsonData.toString());
 				
-				/*System.out.println("Game name :-" + similarGames.get("Gamename"));
-				System.out.println("PackageName is-" +similarGames.get("PackageName"));
-				System.out.println("url for the game is:-" + similarGames.get("GameUrl"));
-				System.out.println("image url:-" + similarGames.get("imagurl"));
-				System.out.println("PackageId:-" + similarGames.get("PackageId"));
-				System.out.println("Ratings:-" +similarGames.get("Ratings"));
-				System.out.println("-----------********-----------");*/
-				
-				/*redisConnect.hmset(GAMES+":"+similarGames.get("PackageId").substring(0,3), similarGames);*/
-				
-				redisConnect.hset(contentId, similarGames.get("PackageId"),jsonObject.toString());
-				
-			/*	List<String> suggestionList=redisConnect.hmget(contentId, similarGames.get("PackageId"));
-				System.out.println("Suggestion list"+suggestionList.toString());*/
-				
-		
+				Set<String> recordSet = new HashSet<String>();
+				if (jsonData.get(0) != null) {
+					recordSet = gson.fromJson(jsonData.get(0), new TypeToken<Set<String>>(){}.getType());
+					addData(recordSet, packageId, packagecon);
+				}
+				else
+				{
+					addData(recordSet, packageId, packagecon);
+				}
 
 			}
 
@@ -182,6 +180,20 @@ public class PlayStoreGameSuggesstion {
 
 			e.printStackTrace();
 		}
+
+		return suggesstion;
+		
 	}
 
+	public static void addData(Set<String> record, String packageId, String packagecon) {
+		record.add(packageId);
+		String packageIdString = null;
+		packageIdString = gson.toJson(record);
+		redisConnect.hset("Base packageId:"+packageId.substring(0, 3) , packageId, packageIdString);
+	}
+
+			
+		
 }
+		
+

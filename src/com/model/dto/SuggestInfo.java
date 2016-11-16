@@ -26,6 +26,7 @@ public class SuggestInfo {
 	
 	private String gameCost;
 	
+	private String packageid;
 	private List<GameInfo> game;
 	
 	public List<GameInfo> getGame() {
@@ -76,6 +77,24 @@ public class SuggestInfo {
 	public void setGameCost(String gameCost) {
 		this.gameCost = gameCost;
 	}
+	public String getPackageid() {
+		return packageid;
+	}
+	public void setPackageid(String packageid) {
+		this.packageid = packageid;
+	}
 	
+	public SuggestInfo(){
+		
+	}
 
+	public SuggestInfo(String gameName,String packageName,String imageUrl,String gameUrl,String gameRating,String gameCost){
+		setGameName(gameName);
+		setPackageName(packageName);
+		setGameRating(gameRating);
+		setGameUrl(gameUrl);
+		setImageUrl(imageUrl);
+		setGameCost(gameCost);
+		
+	}
 }
