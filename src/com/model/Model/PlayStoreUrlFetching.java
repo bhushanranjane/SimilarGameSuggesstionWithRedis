@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,4 +59,37 @@ public class PlayStoreUrlFetching {
 			}
 			return gname;
 		}
+		
+		public String similarGamesUrl(String gameName){
+			try {
+				String eurl=encodeUrl(gameName);
+				Document doc=Jsoup.connect(eurl).userAgent("Chrome/50.0.2661.94").timeout(10000).get();
+				Elements links=doc.select("a[href]");
+				for (Element link : links) {
+					//Get an absolute URL from a URL attribute that may be relative
+					String furl=link.absUrl("href");
+					Pattern p=Pattern.compile("https://play.google.com/store/apps/similar");
+					Matcher m=p.matcher(furl);
+					if(m.find()){
+						return furl;
+					}
+					
+				}
+			}  catch (UnknownHostException e) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+				PlayStoreUrlFetching u = new PlayStoreUrlFetching();
+				u.similarGamesUrl(gameName);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+
+			return null;
+		
+		}
+		
 }

@@ -2,9 +2,7 @@ package com.model.Model;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -22,23 +20,22 @@ public class PlayStoreGameSuggesstion {
 
 	public SuggestInfo getGameSuggesstion(GameInfo gameInfo) {
 
-		String gameUrl = null;
-		String packName = null;
-		String image = null;
-		String flag = null;
-		String rating = null;
-		String iurl = null;
-		String packageId = null;
-		String packagecon = null;
-		SuggestInfo suggesstion = null;
+		String gameUrl;
+		String packName;
+		String image;
+		String flag;
+		String rating;
+		String iurl;
+		String packageId;
+		SuggestInfo suggesstion = new SuggestInfo();
 
-		ArrayList<SuggestInfo> arrayList = new ArrayList<SuggestInfo>();
 		ArrayList<String> imageinfo = new ArrayList<String>();
 		ArrayList<String> games = new ArrayList<String>();
-		Map<String, String> similarGames = new HashMap<String, String>();
 
 		try {
 			Document doc = Jsoup.connect(gameInfo.getGameURL()).userAgent("Chrome/50.0.2661.94").timeout(10000).get();
+
+			/****************** Scraping of Suggestion game  started here *********************/
 
 			// get the titles of the suggested game
 			Elements e = doc.select("div.cards.id-card-list");
@@ -57,7 +54,6 @@ public class PlayStoreGameSuggesstion {
 			for (int k = 0; k < jurl.length; k++) {
 				try {
 					imageinfo.add(jurl[k].substring(jurl[k].indexOf("src") + 5, jurl[k].indexOf("aria") - 2));
-					// System.out.println("Image url is:-" + imageinfo.get(k));
 				} catch (StringIndexOutOfBoundsException e2) {
 					System.out.println("error in image url");
 				}
@@ -68,7 +64,6 @@ public class PlayStoreGameSuggesstion {
 			for (int i = 0; i < gamename.length; i++) {
 				if (gamename[i].contains("href"))
 					continue;
-
 				try {
 					// take a sub String of the String to find game name
 					games.add(gamename[i].substring(gamename[i].indexOf(">") + 1, gamename[i].indexOf("<") - 1));
@@ -102,11 +97,10 @@ public class PlayStoreGameSuggesstion {
 				flag = "Free";
 			}
 
-			System.out.println("Game Size:-" + games.size());
 			// contains all the details of the game
 			for (int j = 0; j < games.size(); j++) {
 				String baseGameId = gameInfo.getPackageId();
-				suggesstion = new SuggestInfo();
+				/* suggestion = new SuggestInfo(); */
 				gameUrl = playStoreUrl.findUrl(games.get(j));
 				packName = gameUrl.substring(gameUrl.indexOf("id=") + 3);
 				packageId = Integer.toString(packName.hashCode() & Integer.MAX_VALUE);

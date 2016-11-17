@@ -1,9 +1,6 @@
 package com.model.Model;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,7 +23,7 @@ public class PlayStoreDataFetching {
 		String cost;
 		String charge ;
 		
-		boolean result;
+
 		try {
 
 			// fetching the document over HTTP
@@ -39,7 +36,7 @@ public class PlayStoreDataFetching {
 			title = t.select("[class=id-app-title]").text();
 			
 			// getting package name of the game
-			Elements g = doc.getElementsByClass("details-wrapper apps");
+			/*Elements g = doc.getElementsByClass("details-wrapper apps");*/
 			packName = url.substring(url.indexOf("id=") + 3);
 			
 			// getting the category of the game
@@ -74,20 +71,9 @@ public class PlayStoreDataFetching {
 
 			if (packageId.equals("") && title.equals("") && packName.equals("") && catInfo.equals("")
 					&& gameUrl.equals("")){
-				System.out.println("package id:-" + gameInfo.getPackageId());
-				 result=false;
+				System.out.println("No data Found");
 			}
 			else {
-				/*
-				 * playStoreDetails.add(gameInfo.getPackageId());
-				 * playStoreDetails.add(gameInfo.getGameName());
-				 * playStoreDetails.add(gameInfo.getPackageName());
-				 * playStoreDetails.add(gameInfo.getGameCategory());
-				 * playStoreDetails.add(gameInfo.getGameURL());
-				 * playStoreDetails.add(gameInfo.getPaid());
-				 */
-				
-
 				System.out.println("package id:-" +gameInfo.getPackageId());
 				System.out.println("Game Name:-" + gameInfo.getGameName());
 				System.out.println("package Name:-" + gameInfo.getPackageName());
