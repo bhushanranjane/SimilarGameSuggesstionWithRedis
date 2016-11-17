@@ -8,7 +8,15 @@ public class SuggestInfo {
 	
 	private int sequenceId;
 	
+	private String baseGameId;
 	
+	public String getBaseGameId() {
+		return baseGameId;
+	}
+	public void setBaseGameId(String baseGameId) {
+		this.baseGameId = baseGameId;
+	}
+
 	private String gameName;
 	
 	

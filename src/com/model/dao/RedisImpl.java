@@ -20,28 +20,29 @@ import redis.clients.jedis.Jedis;
 
 public class RedisImpl {
 
-	PlayStoreDataFetching playStoreDataFetching=new PlayStoreDataFetching();
-	PlayStoreGameSuggesstion playStoreGameSuggesstion=new PlayStoreGameSuggesstion();
-	GameInfo gameInfo=new GameInfo();
-	SuggestInfo suggestInfo=new SuggestInfo();
+	PlayStoreDataFetching playStoreDataFetching = new PlayStoreDataFetching();
+
+	GameInfo gameInfo = new GameInfo();
+	SuggestInfo suggestInfo = new SuggestInfo();
 	Map<String, String> similarGames = new HashMap<String, String>();
 	final static Jedis redisConnect = new Jedis("localhost");
-	static Gson gson=new Gson();
-	public void redisData(SuggestInfo info,GameInfo gInfo)
-	{
+	static Gson gson = new Gson();
+
+	public void redisData(SuggestInfo info) {
 		String packagecon;
-		similarGames.put("Gamename",suggestInfo.getGameName());
-		similarGames.put("PackageName",suggestInfo.getPackageName());
-		similarGames.put("GameUrl",suggestInfo.getGameUrl());
-		similarGames.put("imagurl",suggestInfo.getImageUrl());
-		similarGames.put("PackageId",suggestInfo.getPackageid());
-		similarGames.put("Ratings",suggestInfo.getGameRating());
-		
+		similarGames.put("Gamename", info.getGameName());
+		similarGames.put("PackageName", info.getPackageName());
+		similarGames.put("GameUrl", info.getGameUrl());
+		similarGames.put("imagurl", info.getImageUrl());
+		similarGames.put("PackageId", info.getPackageid());
+		similarGames.put("Ratings", info.getGameRating());
+
+		// Store Similar Games to the set
 		Set<Map<String, String>> suggestedGames = new HashSet<Map<String, String>>();
 		suggestedGames.add(similarGames);
 
 		// redis data with base game as key
-		String baseGameId = gInfo.getPackageId().substring(0, 3);
+		String baseGameId = info.getBaseGameId().substring(0, 3);
 		redisConnect.hset("GameId:-" + baseGameId, "Package Id:-" + info.getPackageid(),
 				"Game Suggestion:-" + suggestedGames.toString());
 
@@ -50,30 +51,27 @@ public class RedisImpl {
 		relatedPackage.add(info.getPackageid());
 
 		packagecon = gson.toJson(relatedPackage);
-		redisConnect.hset("Jsondata" + baseGameId, "Pack id:-" + gInfo.getPackageId(), packagecon);
+		List<String> jsonData = redisConnect.hmget("Game Key:" + info.getBaseGameId().substring(0, 3),
+				info.getBaseGameId());
+		System.out.println("json List" + jsonData.get(0));
 
-		List<String> jsonData = redisConnect.hmget(baseGameId, gInfo.getPackageId());
-		
-		
 		Set<String> recordSet = new HashSet<String>();
 		if (jsonData.get(0) != null) {
-			recordSet = gson.fromJson(jsonData.get(0), new TypeToken<Set<String>>() {}.getType());
-			addData(recordSet, info.getPackageid(), packagecon);
+			recordSet = gson.fromJson(jsonData.get(0), new TypeToken<Set<String>>(){}.getType());
+			addData(recordSet, info.getBaseGameId(), info.getPackageid());
+		} else {
+			addData(recordSet, info.getBaseGameId(), info.getPackageid());
 		}
-		else
-		{
-			addData(recordSet,info.getPackageid(), packagecon);
-		}
-
-
 
 	}
-	public static void addData(Set<String> record, String packageId, String packagecon) {
-		GameInfo gameDetails=new GameInfo();
+
+	public static void addData(Set<String> record, String baseGameId, String packageId) {
+
 		record.add(packageId);
+		System.out.println("recod:-" + record.toString());
 		String packageIdString = null;
 		packageIdString = gson.toJson(record);
-		redisConnect.hset("Base packageId:"+gameDetails.getPackageId().substring(0, 3) ,gameDetails.getPackageId(), packageIdString);
+		redisConnect.hset("Game Key:" + baseGameId.substring(0, 3),baseGameId,packageIdString);
 	}
-	
+
 }

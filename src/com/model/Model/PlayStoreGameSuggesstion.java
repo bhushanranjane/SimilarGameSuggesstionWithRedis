@@ -3,31 +3,23 @@ package com.model.Model;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.model.dao.RedisImpl;
 import com.model.dto.GameInfo;
 import com.model.dto.SuggestInfo;
 
-import redis.clients.jedis.Jedis;
-
 public class PlayStoreGameSuggesstion {
-	public static final String GAMES = "GAMES";
+
 	PlayStoreUrlFetching playStoreUrl = new PlayStoreUrlFetching();
-	final static Jedis redisConnect = new Jedis("localhost");
-	static Gson gson = new Gson();
-	List<String> jsonData=new ArrayList<String>();
-	
-	
-	
+	List<String> jsonData = new ArrayList<String>();
+	RedisImpl redisImpl = new RedisImpl();
+
 	public SuggestInfo getGameSuggesstion(GameInfo gameInfo) {
 
 		String gameUrl = null;
@@ -39,7 +31,6 @@ public class PlayStoreGameSuggesstion {
 		String packageId = null;
 		String packagecon = null;
 		SuggestInfo suggesstion = null;
-		
 
 		ArrayList<SuggestInfo> arrayList = new ArrayList<SuggestInfo>();
 		ArrayList<String> imageinfo = new ArrayList<String>();
@@ -111,8 +102,10 @@ public class PlayStoreGameSuggesstion {
 				flag = "Free";
 			}
 
+			System.out.println("Game Size:-" + games.size());
 			// contains all the details of the game
 			for (int j = 0; j < games.size(); j++) {
+				String baseGameId = gameInfo.getPackageId();
 				suggesstion = new SuggestInfo();
 				gameUrl = playStoreUrl.findUrl(games.get(j));
 				packName = gameUrl.substring(gameUrl.indexOf("id=") + 3);
@@ -124,55 +117,19 @@ public class PlayStoreGameSuggesstion {
 
 				}
 
-				 suggesstion.setGameName(games.get(j));
-				 suggesstion.setPackageName(packName);
-				 suggesstion.setGameUrl(gameUrl);
-				 suggesstion.setImageUrl(image);
-				 suggesstion.setGameRating(gameRating.get(j));
-				 
+				suggesstion.setGameName(games.get(j));
+				suggesstion.setPackageName(packName);
+				suggesstion.setGameUrl(gameUrl);
+				suggesstion.setImageUrl(image);
+				suggesstion.setGameRating(gameRating.get(j));
+				suggesstion.setBaseGameId(baseGameId);
+				suggesstion.setPackageid(packageId);
 
 				if (!flag.equals("Free")) {
 					suggesstion.setGameCost(cost);
 				} else
 					suggesstion.setGameCost("Free");
-
-				similarGames.put("Gamename", games.get(j));
-				similarGames.put("PackageName", packName);
-				similarGames.put("GameUrl", gameUrl);
-				similarGames.put("imagurl", image);
-				similarGames.put("PackageId", packageId);
-				similarGames.put("Ratings", gameRating.get(j));
-
-				Set<Map<String, String>> suggestedGames = new HashSet<Map<String, String>>();
-				suggestedGames.add(similarGames);
-
-				// redis data with base game as key
-				String baseGameId = gameInfo.getPackageId().substring(0, 3);
-				redisConnect.hset("GameId:-" + baseGameId, "Package Id:-" + packageId,
-						"Game Suggestion:-" + suggestedGames.toString());
-
-				// Storing related game related package id in json
-				Set<String> relatedPackage = new HashSet<String>();
-				relatedPackage.add(packageId);
-				
-
-				packagecon = gson.toJson(relatedPackage);				
-				
-				/*System.out.println("Related Package"+packagecon+"-------");*/
-				redisConnect.hset("Jsondata" + baseGameId, "Pack id:-" + gameInfo.getPackageId(), packagecon);
-
-				List<String> jsonData = redisConnect.hmget(baseGameId, gameInfo.getPackageId());
-				System.out.println("json List"+jsonData.toString());
-				
-				Set<String> recordSet = new HashSet<String>();
-				if (jsonData.get(0) != null) {
-					recordSet = gson.fromJson(jsonData.get(0), new TypeToken<Set<String>>(){}.getType());
-					addData(recordSet, packageId, packagecon);
-				}
-				else
-				{
-					addData(recordSet, packageId, packagecon);
-				}
+				redisImpl.redisData(suggesstion);
 
 			}
 
@@ -182,18 +139,7 @@ public class PlayStoreGameSuggesstion {
 		}
 
 		return suggesstion;
-		
+
 	}
 
-	public static void addData(Set<String> record, String packageId, String packagecon) {
-		record.add(packageId);
-		String packageIdString = null;
-		packageIdString = gson.toJson(record);
-		redisConnect.hset("Base packageId:"+packageId.substring(0, 3) , packageId, packageIdString);
-	}
-
-			
-		
 }
-		
-
